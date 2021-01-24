@@ -237,7 +237,7 @@ class JSONSchemaToDatabase:
         else:
             return '"%s"."%s"' % (self._postgres_schema, table)
 
-    def create_tables(self, con):
+    def create_tables(self, con, ignore_if_exists=False):
         '''Creates tables
 
         :param con: psycopg2 connection object
@@ -251,8 +251,8 @@ class JSONSchemaToDatabase:
                 types = [self._table_definitions[table][column] for column in columns]
                 id_data_type = {'postgres': 'serial', 'redshift': 'int identity(1, 1) not null'}[self._database_flavor]
 
-                create_q = 'create table %s (id %s, "%s" %s not null, "%s" text not null, %s unique ("%s", "%s"), unique (id))' % \
-                           (self._postgres_table_name(table), id_data_type, self._item_col_name, postgres_types[self._item_col_type], self._prefix_col_name,
+                create_q = 'create table %s %s (id %s, "%s" %s not null, "%s" text not null, %s unique ("%s", "%s"), unique (id))' % \
+                           ("IF NOT EXISTS" if ignore_if_exists else "", self._postgres_table_name(table), id_data_type, self._item_col_name, postgres_types[self._item_col_type], self._prefix_col_name,
                             ''.join('"%s" %s, ' % (c, postgres_types[t]) for c, t in zip(columns, types)),
                             self._item_col_name, self._prefix_col_name)
                 self._execute(cursor, create_q)
